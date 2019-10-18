@@ -57,6 +57,13 @@ describe('POST /auth/signup', () => {
         expect(res.statusCode).toEqual(422);
         expect(res.body.message).toEqual('"password" is required');
     });
+    it('should require passwords without empty spaces', async () => {
+        const res = await request(app)
+            .post('/auth/signup')
+            .send({ username: 'usertest', email: 'user@tester.com', password: '          ' });
+        expect(res.statusCode).toEqual(422);
+        expect(res.body.message).toEqual('"password" is not allowed to be empty');
+    });
     it('should require password of at least 8 characters long', async () => {
         const res = await request(app)
             .post('/auth/signup')

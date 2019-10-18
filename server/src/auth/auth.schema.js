@@ -10,6 +10,7 @@ module.exports = Joi.object({
         .email()
         .required(),
     password: Joi.string()
+        .trim()
         .min(8)
         .required(),
     repeat_password: Joi.ref('password')
