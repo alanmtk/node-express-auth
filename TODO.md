@@ -1,1 +1,2 @@
-[ ] Add Husky precommit hook to lint staged files
+- Add Husky precommit hook to lint staged files
+- Improve user schema password

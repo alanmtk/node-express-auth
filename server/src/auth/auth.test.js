@@ -4,6 +4,8 @@ const db = require('./../db');
 
 const users = db.get('users');
 
+const jwtRegExp = new RegExp(/^[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*$/);
+
 describe('POST /auth/signup', () => {
     beforeAll(() => users.remove());
     afterAll(() => users.remove());
@@ -20,7 +22,7 @@ describe('POST /auth/signup', () => {
         expect(res.statusCode).toEqual(422);
         expect(res.body.message).toEqual('"username" length must be at least 3 characters long');
     });
-    it('should require username of at less than or equal to 30 characters long', async () => {
+    it('should require username less than or equal to 30 characters long', async () => {
         const res = await request(app)
             .post('/auth/signup')
             .send({ username: 'superlongusernamewillfailwhensigninup' });
@@ -101,9 +103,8 @@ describe('POST /auth/signup', () => {
             });
         expect(res.statusCode).toEqual(200);
         expect(await users.count()).toEqual(1);
-        users.findOne({ username: 'usertest' }).then(user => {
-            expect(user.email).toEqual('user@tester.com');
-        });
+        const user = await users.findOne({ username: 'usertest' });
+        expect(user.email).toEqual('user@tester.com');
     });
     it('should not allow a user with an existing username', async () => {
         const user = {
@@ -120,5 +121,46 @@ describe('POST /auth/signup', () => {
             .send(user);
         expect(res.statusCode).toEqual(409);
         expect(res.body.message).toEqual('That email was taken by another user.');
+    });
+});
+
+describe('POST /auth/signin', () => {
+    beforeAll(() => users.remove());
+    afterAll(() => users.remove());
+
+    it('should require email', async () => {
+        const res = await request(app).post('/auth/signin');
+        expect(res.statusCode).toEqual(422);
+        expect(res.body.message).toEqual('"email" is required');
+    });
+    it('should require password', async () => {
+        const res = await request(app)
+            .post('/auth/signin')
+            .send({ email: 'user@test.com' });
+        expect(res.statusCode).toEqual(422);
+        expect(res.body.message).toEqual('"password" is required');
+    });
+    it('should return invalid credentials when wrong credentials are sent', async () => {
+        const res = await request(app)
+            .post('/auth/signin')
+            .send({ email: 'user@test.com', password: '12345678' });
+        expect(res.statusCode).toEqual(401);
+        expect(res.body.message).toEqual('Invalid credentials.');
+    });
+    it('should return a jwt after successful login', async () => {
+        await request(app)
+            .post('/auth/signup')
+            .send({
+                username: 'usertest',
+                email: 'user@tester.com',
+                password: '12345678',
+                repeat_password: '12345678'
+            });
+        const res = await request(app)
+            .post('/auth/signin')
+            .send({ email: 'user@tester.com', password: '12345678' });
+        expect(res.statusCode).toEqual(200);
+        expect(res.body).toHaveProperty('token');
+        expect(res.body.token).toMatch(jwtRegExp);
     });
 });

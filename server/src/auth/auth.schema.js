@@ -1,6 +1,6 @@
 const Joi = require('@hapi/joi');
 
-module.exports = Joi.object({
+const signUpSchema = Joi.object({
     username: Joi.string()
         .alphanum()
         .min(3)
@@ -15,3 +15,12 @@ module.exports = Joi.object({
         .required(),
     repeat_password: Joi.ref('password')
 }).with('password', 'repeat_password');
+
+const signInSchema = Joi.object({
+    email: Joi.string()
+        .email()
+        .required(),
+    password: Joi.string().required()
+});
+
+module.exports = { signUpSchema, signInSchema };
